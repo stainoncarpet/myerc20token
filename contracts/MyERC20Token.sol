@@ -4,21 +4,6 @@ pragma solidity >=0.8.11 <0.9.0;
 
 import "hardhat/console.sol";
 
-/* 
-Написать токен стандарта ERC-20
- Реализовать весь основной функционал контракта. Не наследовать от openzeppelin и прочих библиотек и не копировать код (!)
- Добавить функции mint и burn
- Написать полноценные тесты к контракту
- Написать скрипт деплоя
- Задеплоить в тестовую сеть
- Написать таски на transfer, transferFrom, approve
- Верифицировать контракт
-Требования
-Все ERC20 токены в сети должны удовлетворять стандарту описанному в eip.
-Содержать полный набор функций из eip.
-Реализация логики и ответственность за правильность лежит на вас, впрочем в сети полно примеров ERC20 токенов, где можно посмотреть как обычно выглядит реализация подобных токенов.
-*/
-
 // https://eips.ethereum.org/EIPS/eip-20
 interface MyEIP20Interface {
     function name() external view returns (string memory);
@@ -45,7 +30,6 @@ interface MyEIP20Interface {
 
 contract MyERC20Token is MyEIP20Interface {
     address payable public immutable admin;
-    // View functions
     string public name;
     string public symbol;
     uint8 public decimals = 18;
@@ -78,7 +62,6 @@ contract MyERC20Token is MyEIP20Interface {
         mint(msg.value, msg.sender);
     }
 
-    // Functions
     function transfer(address _to, uint256 _value) external returns (bool) {
         uint256 amountToBurn = (_value * BURN_DIVIDEND) / BURN_DIVISOR;
         require(balanceOf[msg.sender] >= (_value + amountToBurn), "Insufficient balance");
@@ -129,7 +112,6 @@ contract MyERC20Token is MyEIP20Interface {
         return true;
     }
 
-    // Extra functions
     function mint(uint256 incomingWei, address sender) private {
         uint256 newlyMintedTokenAmount = (incomingWei / TOKEN_PRICE_IN_WEI) * (10**decimals);
         require(MAX_SUPPLY > totalSupply + newlyMintedTokenAmount, "Maximum MyERC20Token supply reached");
