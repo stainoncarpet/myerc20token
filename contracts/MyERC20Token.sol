@@ -22,14 +22,21 @@ import "hardhat/console.sol";
 // https://eips.ethereum.org/EIPS/eip-20
 interface MyEIP20Interface {
     function name() external view returns (string memory);
+
     function symbol() external view returns (string memory);
+
     function decimals() external view returns (uint8);
+
     function totalSupply() external view returns (uint256);
 
     function balanceOf(address _owner) external view returns (uint256 balance);
+
     function transfer(address _to, uint256 _value) external returns (bool success);
+
     function transferFrom(address _from, address _to, uint256 _value) external returns (bool success);
+
     function approve(address _spender, uint256 _value) external returns (bool success);
+
     function allowance(address _owner, address _spender) external view returns (uint256 remaining);
 
     event Transfer(address indexed _from, address indexed _to, uint256 _value);
@@ -37,7 +44,7 @@ interface MyEIP20Interface {
 }
 
 contract MyERC20Token is MyEIP20Interface {
-    address payable immutable public admin;
+    address payable public immutable admin;
     // View functions
     string public name;
     string public symbol;
@@ -49,11 +56,7 @@ contract MyERC20Token is MyEIP20Interface {
     // DIVIDEND / DIVISOR = PERCENTAGE, e.g. 1 / 100 = 1%
     uint256 public constant BURN_DIVIDEND = 1;
     uint256 public constant BURN_DIVISOR = 100;
-
-    // keep track of
-        // balanceOf
-        // totalSupply
-        // allowance
+    uint256 public immutable MAX_SUPPLY = 100000 * 10**decimals;
 
     constructor(string memory _name, string memory _symbol) {
         name = _name;
@@ -77,10 +80,9 @@ contract MyERC20Token is MyEIP20Interface {
 
     // Functions
     function transfer(address _to, uint256 _value) external returns (bool) {
-        uint256 amountToBurn = _value * BURN_DIVIDEND / BURN_DIVISOR;
-        //console.log("FROM TRANSFER: ", balanceOf[msg.sender], _value + amountToBurn);
+        uint256 amountToBurn = (_value * BURN_DIVIDEND) / BURN_DIVISOR;
         require(balanceOf[msg.sender] >= (_value + amountToBurn), "Insufficient balance");
-        
+
         balanceOf[msg.sender] -= (_value + amountToBurn);
         balanceOf[_to] += _value;
         burn(amountToBurn);
@@ -90,36 +92,47 @@ contract MyERC20Token is MyEIP20Interface {
     }
 
     function transferFrom(address _from, address _to, uint256 _value) external returns (bool) {
-        uint256 amountToBurn = _value * BURN_DIVIDEND / BURN_DIVISOR;
+        uint256 amountToBurn = (_value * BURN_DIVIDEND) / BURN_DIVISOR;
 
-        require(allowance[_from][msg.sender] >= (_value + amountToBurn), "Transfer amount exceeds allowance");
-        require(balanceOf[_from] >= (_value + amountToBurn), "Allower's balance is not sufficiet");
+        require(allowance[_from][msg.sender] >= _value, "Allowance exceeded");
+        require(balanceOf[_from] >= (_value + amountToBurn), "Allower's balance is not sufficient");
 
         balanceOf[_from] -= (_value + amountToBurn);
         balanceOf[_to] += _value;
 
+        allowance[_from][msg.sender] -= _value;
+
         burn(amountToBurn);
+
+        emit Transfer(_from, _to, _value);
+        return true;
     }
 
     function approve(address _spender, uint256 _value) external returns (bool) {
         allowance[msg.sender][_spender] = _value;
+        emit Approval(msg.sender, _spender, _value);
         return true;
     }
 
     function increaseAllowance(address _spender, uint256 _amount) external returns (bool) {
-        allowance[msg.sender][_spender] += _value;
+        allowance[msg.sender][_spender] += _amount;
         return true;
     }
 
     function decreaseAllowance(address _spender, uint256 _amount) external returns (bool) {
-        allowance[msg.sender][_spender] -= _value;
+        if (allowance[msg.sender][_spender] > _amount) {
+            allowance[msg.sender][_spender] -= _amount;
+        } else {
+            allowance[msg.sender][_spender] = 0;
+        }
+
         return true;
     }
 
     // Extra functions
     function mint(uint256 incomingWei, address sender) private {
-        // in smallest units
-        uint256 newlyMintedTokenAmount = incomingWei / TOKEN_PRICE_IN_WEI * (10**decimals);
+        uint256 newlyMintedTokenAmount = (incomingWei / TOKEN_PRICE_IN_WEI) * (10**decimals);
+        require(MAX_SUPPLY > totalSupply + newlyMintedTokenAmount, "Maximum MyERC20Token supply reached");
 
         balanceOf[sender] += newlyMintedTokenAmount;
         totalSupply += newlyMintedTokenAmount;
@@ -135,12 +148,12 @@ contract MyERC20Token is MyEIP20Interface {
     }
 
     function extractEther() external {
-        require(payable(msg.sender) == admin);
+        require(msg.sender == admin, "Only admin can do that");
         admin.transfer(address(this).balance);
     }
 
     function destroyContract() external {
-        require(msg.sender == admin);
+        require(msg.sender == admin, "Only admin can do that");
         selfdestruct(admin);
     }
 }
