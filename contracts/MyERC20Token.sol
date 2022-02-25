@@ -2,26 +2,16 @@
 
 pragma solidity >=0.8.11 <0.9.0;
 
-import "hardhat/console.sol";
-
 // https://eips.ethereum.org/EIPS/eip-20
 interface MyEIP20Interface {
     function name() external view returns (string memory);
-
     function symbol() external view returns (string memory);
-
     function decimals() external view returns (uint8);
-
     function totalSupply() external view returns (uint256);
-
     function balanceOf(address _owner) external view returns (uint256 balance);
-
     function transfer(address _to, uint256 _value) external returns (bool success);
-
     function transferFrom(address _from, address _to, uint256 _value) external returns (bool success);
-
     function approve(address _spender, uint256 _value) external returns (bool success);
-
     function allowance(address _owner, address _spender) external view returns (uint256 remaining);
 
     event Transfer(address indexed _from, address indexed _to, uint256 _value);
@@ -33,14 +23,15 @@ contract MyERC20Token is MyEIP20Interface {
     string public name;
     string public symbol;
     uint8 public decimals = 18;
-    mapping(address => uint256) public balanceOf; // address user
+    mapping(address => uint256) public balanceOf;
     uint256 public totalSupply = 0;
-    mapping(address => mapping(address => uint256)) public allowance; // address owner, address spender
-    uint256 public constant TOKEN_PRICE_IN_WEI = 10**16; // contract receives some ether and mints tokens: 1 token per 0.01 ETH
+    uint256 public immutable MAX_SUPPLY = 100000 * 10**decimals;
+    mapping(address => mapping(address => uint256)) public allowance;
+    uint256 public constant TOKEN_PRICE_IN_WEI = 10**16;
+
     // DIVIDEND / DIVISOR = PERCENTAGE, e.g. 1 / 100 = 1%
     uint256 public constant BURN_DIVIDEND = 1;
     uint256 public constant BURN_DIVISOR = 100;
-    uint256 public immutable MAX_SUPPLY = 100000 * 10**decimals;
 
     constructor(string memory _name, string memory _symbol) {
         name = _name;
@@ -48,7 +39,6 @@ contract MyERC20Token is MyEIP20Interface {
         admin = payable(msg.sender);
     }
 
-    // accepts minimum 0.01 ETH
     modifier onlyMinimum() {
         require(msg.value >= 10**16, "Minimum amount of ETH accepted: 0.01 ETH");
         _;
@@ -75,6 +65,7 @@ contract MyERC20Token is MyEIP20Interface {
     }
 
     function transferFrom(address _from, address _to, uint256 _value) external returns (bool) {
+        // burn 1% of transferred amount
         uint256 amountToBurn = (_value * BURN_DIVIDEND) / BURN_DIVISOR;
 
         require(allowance[_from][msg.sender] >= _value, "Allowance exceeded");
@@ -122,20 +113,20 @@ contract MyERC20Token is MyEIP20Interface {
         // send back remainder of incoming ETH
         uint256 remainingWei = incomingWei % TOKEN_PRICE_IN_WEI;
         payable(sender).transfer(remainingWei);
+        emit Transfer(address(0x0), sender, newlyMintedTokenAmount);
     }
 
-    // burn 1% of transferred amount
     function burn(uint256 amountToBurn) private {
         totalSupply -= amountToBurn;
     }
 
     function extractEther() external {
-        require(msg.sender == admin, "Only admin can do that");
+        require(msg.sender == admin, "Only admin can trigger ether extraction");
         admin.transfer(address(this).balance);
     }
 
     function destroyContract() external {
-        require(msg.sender == admin, "Only admin can do that");
+        require(msg.sender == admin, "Only admin can trigger contract destruction");
         selfdestruct(admin);
     }
 }

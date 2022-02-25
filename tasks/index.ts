@@ -5,20 +5,23 @@ import { task } from "hardhat/config";
 declare global {
     namespace NodeJS {
       interface ProcessEnv {
+        ETHERSCAN_API_KEY: string
+        ROPSTEN_URL: string
+        ALCHEMY_KEY: string
         METAMASK_PRIVATE_KEY: string
+        COINMARKETCAP_API_KEY: string
       }
     }
   }
 
-const network = "rinkeby";
-const API_TOKEN = "";
+const NETWORK = "ropsten";
 
 export const runTasks = () => {
-    task("get", "Purchase MyERC20Token with ETH")
+    task("get", "Mint MyERC20Token be sending ETH")
         .addParam("address", "Contract address")
         .addParam("eth", "Amount of ETH to swap for MyERC20Token")
         .setAction(async (taskArguments, hre) => {
-            const alchemyProvider = new hre.ethers.providers.AlchemyProvider(network, API_TOKEN);
+            const alchemyProvider = new hre.ethers.providers.AlchemyProvider(NETWORK, process.env.ALCHEMY_KEY);
             const walletOwner = new hre.ethers.Wallet(process.env.METAMASK_PRIVATE_KEY, alchemyProvider);
 
             const donationTransaction = await walletOwner.sendTransaction({ to: taskArguments.address, value: taskArguments.eth});
@@ -27,14 +30,14 @@ export const runTasks = () => {
         })
     ;
 
-    task("transfer", "Send wei to contract")
+    task("transfer", "Send MyERC20Token to address")
         .addParam("address", "Contract address")
         .addParam("to", "Recipient address")
         .addParam("value", "How much MyERC20Token to transfer")
         .setAction(async (taskArguments, hre) => {
             const contractSchema = require("../artifacts/contracts/MyERC20Token.sol/MyERC20Token.json");
 
-            const alchemyProvider = new hre.ethers.providers.AlchemyProvider(network, API_TOKEN);
+            const alchemyProvider = new hre.ethers.providers.AlchemyProvider(NETWORK, process.env.ALCHEMY_KEY);
             const walletOwner = new hre.ethers.Wallet(process.env.METAMASK_PRIVATE_KEY, alchemyProvider);
             const contractInstance = new hre.ethers.Contract(taskArguments.address, contractSchema.abi, walletOwner);
 
@@ -44,7 +47,7 @@ export const runTasks = () => {
         })
     ;
 
-    task("transferfrom", "Send wei to contract")
+    task("transferfrom", "Send MyERC20Token from one address to another")
         .addParam("address", "Contract address")
         .addParam("from", "Payer address")
         .addParam("to", "Recipient address")
@@ -52,7 +55,7 @@ export const runTasks = () => {
         .setAction(async (taskArguments, hre) => {
             const contractSchema = require("../artifacts/contracts/MyERC20Token.sol/MyERC20Token.json");
 
-            const alchemyProvider = new hre.ethers.providers.AlchemyProvider(network, API_TOKEN);
+            const alchemyProvider = new hre.ethers.providers.AlchemyProvider(NETWORK, process.env.ALCHEMY_KEY);
             const walletOwner = new hre.ethers.Wallet(process.env.METAMASK_PRIVATE_KEY, alchemyProvider);
             const contractInstance = new hre.ethers.Contract(taskArguments.address, contractSchema.abi, walletOwner);
 
@@ -62,14 +65,14 @@ export const runTasks = () => {
         })
     ;
 
-    task("approve", "Send wei to contract")
+    task("approve", "Allow address to spend on your behalf")
         .addParam("address", "Contract address")
-        .addParam("spender", "Allow address to spend")
+        .addParam("spender", "ЫSpender address")
         .addParam("value", "How much MyERC20Token to transfer")
         .setAction(async (taskArguments, hre) => {
             const contractSchema = require("../artifacts/contracts/MyERC20Token.sol/MyERC20Token.json");
 
-            const alchemyProvider = new hre.ethers.providers.AlchemyProvider(network, API_TOKEN);
+            const alchemyProvider = new hre.ethers.providers.AlchemyProvider(NETWORK, process.env.ALCHEMY_KEY);
             const walletOwner = new hre.ethers.Wallet(process.env.METAMASK_PRIVATE_KEY, alchemyProvider);
             const contractInstance = new hre.ethers.Contract(taskArguments.address, contractSchema.abi, walletOwner);
 
@@ -77,5 +80,20 @@ export const runTasks = () => {
             
             console.log("Receipt: ", approveTx);
         })
+    ;
+
+    task("destroy", "Destroy contract")
+    .addParam("address", "Contract address")
+    .setAction(async (taskArguments, hre) => {
+        const contractSchema = require("../artifacts/contracts/MyERC20Token.sol/MyERC20Token.json");
+
+        const alchemyProvider = new hre.ethers.providers.AlchemyProvider(NETWORK, process.env.ALCHEMY_KEY);
+        const walletOwner = new hre.ethers.Wallet(process.env.METAMASK_PRIVATE_KEY, alchemyProvider);
+        const contractInstance = new hre.ethers.Contract(taskArguments.address, contractSchema.abi, walletOwner);
+
+        const approveTx = await contractInstance.destroyContract();
+        
+        console.log("Receipt: ", approveTx);
+    })
     ;
 };

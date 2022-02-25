@@ -10,12 +10,17 @@ describe("MyERC20Token", () => {
 
     const signers = await ethers.getSigners();
 
-    await signers[1].sendTransaction({
+    const tokenDecimals = await myERC20Token.decimals();
+
+    const mintTx = signers[1].sendTransaction({
       value: ethers.utils.parseEther("1.0"),
       to: myERC20Token.address
     });
 
-    const tokenDecimals = await myERC20Token.decimals();
+    await expect(mintTx)
+      .to.emit(myERC20Token, "Transfer")
+      .withArgs("0x0000000000000000000000000000000000000000", signers[1].address, ethers.utils.parseUnits("100", tokenDecimals))
+    ;
 
     // 1 ETH should be equal 100 MyERC20Token
     const balanceInSmallestTokenUnits = await myERC20Token.balanceOf(signers[1].address);
@@ -125,6 +130,7 @@ describe("MyERC20Token", () => {
     const balanceInSmallestTokenUnits2 = await myERC20Token.balanceOf(signers[1].address);
     const balanceInNormalTokenUnits2 = parseFloat(ethers.utils.formatUnits(balanceInSmallestTokenUnits2, tokenDecimals))
 
+    // test may fail if gas reporter is enabled (gas reporter overrides test command), coverage doesn't fail
     expect(balanceInNormalTokenUnits2).to.equal(101);
     expect(await myERC20Token.totalSupply()).to.equal(balanceInSmallestTokenUnits2);
 
@@ -220,7 +226,7 @@ describe("MyERC20Token", () => {
 
     const adminBalanceBeforeExtraction = ethers.utils.formatEther(await signers[0].getBalance());
 
-    await expect(myERC20Token.connect(signers[5]).extractEther()).to.be.revertedWith("Only admin can do that");
+    await expect(myERC20Token.connect(signers[5]).extractEther()).to.be.revertedWith("Only admin can trigger ether extraction");
 
     await myERC20Token.extractEther();
 
@@ -283,7 +289,7 @@ describe("MyERC20Token", () => {
     await expect(
       myERC20Token.connect(signers[3]).destroyContract()
     )
-    .to.be.revertedWith("Only admin can do that");
+    .to.be.revertedWith("Only admin can trigger contract destruction");
 
     await myERC20Token.destroyContract();
 
