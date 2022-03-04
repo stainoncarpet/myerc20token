@@ -21,8 +21,10 @@ const config: HardhatUserConfig = {
     ropsten: {
       url: process.env.ROPSTEN_URL,
       accounts: [process.env.METAMASK_PRIVATE_KEY],
-      // gas: 2100000,
-      // gasPrice: 8000000000,
+    },
+    rinkeby: {
+      url: process.env.RINKEBY_URL,
+      accounts: [process.env.METAMASK_PRIVATE_KEY],
     },
   },
   gasReporter: {

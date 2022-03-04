@@ -10,11 +10,12 @@ declare global {
         ALCHEMY_KEY: string
         METAMASK_PRIVATE_KEY: string
         COINMARKETCAP_API_KEY: string
+        RINKEBY_URL: string
       }
     }
   }
 
-const NETWORK = "ropsten";
+const NETWORK = "rinkeby";
 
 export const runTasks = () => {
     task("get", "Mint MyERC20Token be sending ETH")

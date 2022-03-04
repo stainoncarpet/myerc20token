@@ -22,21 +22,25 @@ contract MyERC20Token is MyEIP20Interface {
     address payable public immutable admin;
     string public name;
     string public symbol;
-    uint8 public decimals = 18;
+    uint8 public decimals = 6;
     mapping(address => uint256) public balanceOf;
     uint256 public totalSupply = 0;
     uint256 public immutable MAX_SUPPLY = 100000 * 10**decimals;
     mapping(address => mapping(address => uint256)) public allowance;
     uint256 public constant TOKEN_PRICE_IN_WEI = 10**16;
 
-    // DIVIDEND / DIVISOR = PERCENTAGE, e.g. 1 / 100 = 1%
+    // DIVIDEND / DIVISOR = PERCENTAGE, e.g. 1 / 1000 = 0.1%
     uint256 public constant BURN_DIVIDEND = 1;
-    uint256 public constant BURN_DIVISOR = 100;
+    uint256 public constant BURN_DIVISOR = 1000;
 
     constructor(string memory _name, string memory _symbol) {
         name = _name;
         symbol = _symbol;
         admin = payable(msg.sender);
+
+        // create initial batch of tokens and give it to admin
+        balanceOf[msg.sender] = 1000 * 10**decimals;
+        totalSupply = 1000 * 10**decimals;
     }
 
     modifier onlyMinimum() {
